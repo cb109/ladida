@@ -6,6 +6,7 @@ app_name = "music"
 
 urlpatterns = [
     path("", views.song_list, name="song_list"),
+    path("sw.js", views.service_worker, name="service_worker"),
     path("songs/<int:pk>/", views.song_detail, name="song_detail"),
     path("songs/<int:pk>/collections/add/", views.song_collection_add, name="song_collection_add"),
     path(

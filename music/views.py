@@ -1,3 +1,6 @@
+import hashlib
+from pathlib import Path
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
@@ -9,6 +12,26 @@ from .models import Collection, PlaylistImport, Song
 from .tasks import import_playlist
 
 SONGS_PER_PAGE = 50
+UI_DIRS = [Path(__file__).parent / "static", Path(__file__).parent / "templates"]
+
+
+def _ui_version():
+    digest = hashlib.sha256()
+    for root in UI_DIRS:
+        for path in sorted(p for p in root.rglob("*") if p.is_file()):
+            digest.update(path.relative_to(root).as_posix().encode())
+            digest.update(path.read_bytes())
+    return digest.hexdigest()[:16]
+
+
+def service_worker(request):
+    # The version changes whenever a template or static file changes, which makes
+    # the browser install the new worker and drop the old UI cache.
+    response = render(
+        request, "music/sw.js", {"version": _ui_version()}, content_type="application/javascript"
+    )
+    response["Cache-Control"] = "no-cache"
+    return response
 
 
 def _is_htmx(request):

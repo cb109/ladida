@@ -35,9 +35,15 @@
     {% block content %}{% endblock %}
   </main>
   <script>
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("{% url 'music:service_worker' %}");
     // Only one player at a time.
     document.addEventListener("play", (e) => {
       document.querySelectorAll("audio").forEach((a) => a !== e.target && a.pause());
+      // Store played songs for offline playback.
+      const url = e.target.currentSrc;
+      if (url && "serviceWorker" in navigator) {
+        navigator.serviceWorker.ready.then((r) => r.active?.postMessage({ type: "cache-media", url }));
+      }
     }, true);
     document.addEventListener("htmx:afterSwap", (e) => {
       if (e.detail.target.tagName === "DIALOG" && !e.detail.target.open) e.detail.target.showModal();
