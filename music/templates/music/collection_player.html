@@ -1,0 +1,106 @@
+{% extends "music/base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <h2>{{ collection.name }} ({{ collection.song_count }})</h2>
+  <a href="{% url 'music:collection_list' %}" role="button" class="secondary outline">Back</a>
+</div>
+
+{% if tracks %}
+<article class="player">
+  <img class="cover" id="player-cover" alt="">
+  <p class="player-artist" id="player-artist"></p>
+  <h3 class="player-title" id="player-title"></h3>
+
+  <div class="player-seek">
+    <span class="time" id="player-current">0:00</span>
+    <input type="range" id="player-seek" min="0" max="0" step="1" value="0" aria-label="Seek">
+    <span class="time" id="player-duration">0:00</span>
+  </div>
+
+  <div class="player-controls">
+    <button type="button" class="secondary" id="player-prev" aria-label="Previous">&#x23EE;&#xFE0E;</button>
+    <button type="button" id="player-play" aria-label="Play">&#x25B6;&#xFE0E;</button>
+    <button type="button" class="secondary" id="player-next" aria-label="Next">&#x23ED;&#xFE0E;</button>
+  </div>
+  <audio id="player-audio" preload="metadata"></audio>
+</article>
+
+<ul class="tracklist">
+  {% for t in tracks %}
+    <li>
+      <button type="button" data-index="{{ forloop.counter0 }}">
+        {% if t.thumbnail %}<img src="{{ t.thumbnail }}" alt="" loading="lazy">{% else %}<span class="tracklist-thumb"></span>{% endif %}
+        <span><small>{{ t.artist }}</small><br>{{ t.name }}</span>
+      </button>
+    </li>
+  {% endfor %}
+</ul>
+{{ tracks|json_script:"tracks" }}
+{% else %}
+<p>This collection has no songs yet.</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if tracks %}
+<script>
+  (() => {
+    const tracks = JSON.parse(document.getElementById("tracks").textContent);
+    const $ = (id) => document.getElementById(id);
+    const audio = $("player-audio"), seek = $("player-seek"), playBtn = $("player-play");
+    const items = [...document.querySelectorAll(".tracklist button")];
+    const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    let index = 0;
+
+    function load(i, autoplay) {
+      index = (i + tracks.length) % tracks.length;
+      const t = tracks[index];
+      audio.src = t.audio;
+      $("player-cover").src = t.thumbnail;
+      $("player-cover").hidden = !t.thumbnail;
+      $("player-artist").textContent = t.artist;
+      $("player-title").textContent = t.name;
+      document.title = `${t.name} · ladida`;
+      items.forEach((b, j) => j === index ? b.setAttribute("aria-current", "true") : b.removeAttribute("aria-current"));
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: t.name, artist: t.artist, artwork: t.thumbnail ? [{ src: t.thumbnail }] : [],
+        });
+      }
+      if (autoplay) audio.play();
+    }
+
+    const prev = () => (audio.currentTime > 3 ? (audio.currentTime = 0) : load(index - 1, true));
+    const next = () => load(index + 1, true);
+
+    playBtn.addEventListener("click", () => (audio.paused ? audio.play() : audio.pause()));
+    $("player-prev").addEventListener("click", prev);
+    $("player-next").addEventListener("click", next);
+    items.forEach((b) => b.addEventListener("click", () => load(Number(b.dataset.index), true)));
+
+    audio.addEventListener("play", () => { playBtn.innerHTML = "&#x23F8;&#xFE0E;"; playBtn.setAttribute("aria-label", "Pause"); });
+    audio.addEventListener("pause", () => { playBtn.innerHTML = "&#x25B6;&#xFE0E;"; playBtn.setAttribute("aria-label", "Play"); });
+    audio.addEventListener("ended", () => index < tracks.length - 1 && next());
+    audio.addEventListener("loadedmetadata", () => {
+      seek.max = Math.floor(audio.duration);
+      $("player-duration").textContent = fmt(audio.duration);
+    });
+    audio.addEventListener("timeupdate", () => {
+      seek.value = Math.floor(audio.currentTime);
+      $("player-current").textContent = fmt(audio.currentTime);
+    });
+    seek.addEventListener("input", () => { audio.currentTime = Number(seek.value); });
+
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.setActionHandler("play", () => audio.play());
+      navigator.mediaSession.setActionHandler("pause", () => audio.pause());
+      navigator.mediaSession.setActionHandler("previoustrack", prev);
+      navigator.mediaSession.setActionHandler("nexttrack", next);
+    }
+
+    load(0, false);
+  })();
+</script>
+{% endif %}
+{% endblock %}

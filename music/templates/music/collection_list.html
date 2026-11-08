@@ -12,6 +12,8 @@
     <tr>
       <td><a href="{% url 'music:song_list' %}?collection={{ c.pk }}">{{ c.name }} ({{ c.song_count }})</a></td>
       <td class="row-actions">
+        <a href="{% url 'music:collection_player' c.pk %}">Play</a>
+        &middot;
         <a href="{% url 'music:collection_edit' c.pk %}">Edit</a>
         &middot;
         <a href="{% url 'music:collection_delete' c.pk %}">Delete</a>

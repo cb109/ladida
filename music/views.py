@@ -103,6 +103,21 @@ def collection_form(request, pk=None):
 
 
 @staff_member_required
+def collection_player(request, pk):
+    collection = get_object_or_404(Collection.objects.with_song_count(), pk=pk)
+    tracks = [
+        {
+            "name": song.name,
+            "artist": str(song.author or "Unknown artist"),
+            "audio": song.audio_file.url,
+            "thumbnail": song.thumbnail.url if song.thumbnail else "",
+        }
+        for song in collection.songs.select_related("author").order_by("name")
+    ]
+    return render(request, "music/collection_player.html", {"collection": collection, "tracks": tracks})
+
+
+@staff_member_required
 def collection_delete(request, pk):
     collection = get_object_or_404(Collection.objects.with_song_count(), pk=pk)
     if request.method == "POST":

@@ -120,6 +120,75 @@
 }
 #song-rows { margin-top: var(--pico-spacing); }
 
+.player,
+.tracklist {
+  max-width: 640px;
+  margin-inline: auto;
+}
+.player { text-align: center; }
+.player .cover { max-height: 280px; }
+.player-artist {
+  margin-bottom: 0.25rem;
+  color: var(--pico-muted-color);
+}
+.player-title { margin-bottom: var(--pico-spacing); }
+.player-seek {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+#player-seek {
+  flex: 1;
+  margin: 0;
+}
+.player-seek .time {
+  min-width: 3rem;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+.player-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: var(--pico-spacing);
+}
+.player-controls button {
+  width: auto;
+  min-width: 4rem;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.tracklist {
+  padding: 0;
+  margin-top: calc(var(--pico-spacing) * 2);
+}
+.tracklist li { list-style: none; }
+.tracklist button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0 0 0.25rem;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  border-radius: var(--pico-border-radius);
+}
+.tracklist button:hover { background: var(--pico-secondary-background); }
+.tracklist button[aria-current] { background: var(--pico-primary-focus); }
+.tracklist img,
+.tracklist-thumb {
+  flex: none;
+  width: 64px;
+  height: 48px;
+  object-fit: contain;
+  background: #000;
+  border-radius: 4px;
+}
+
 @media (max-width: 768px) {
   .song-row { grid-template-columns: 96px minmax(0, 1fr); }
   .song-row .thumb { width: 96px; height: 72px; }
