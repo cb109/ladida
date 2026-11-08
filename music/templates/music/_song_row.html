@@ -1,0 +1,21 @@
+<div class="song-row" id="song-row-{{ song.pk }}" {% if oob %}hx-swap-oob="true"{% endif %}>
+  {% if song.thumbnail %}
+    <img class="thumb" src="{{ song.thumbnail.url }}" alt="" loading="lazy">
+  {% else %}
+    <div class="thumb"></div>
+  {% endif %}
+  <div class="song-main">
+    <small class="song-artist">{{ song.author|default:"Unknown artist" }}</small>
+    <strong>{{ song.name }}</strong>
+    <audio controls preload="none" src="{{ song.audio_file.url }}"></audio>
+  </div>
+  <div class="song-collections">
+    {% for c in song.collections.all %}
+      <a class="tag" href="{% url 'music:song_list' %}?collection={{ c.pk }}">{{ c.name }}</a>
+    {% endfor %}
+  </div>
+  <div class="song-actions">
+    <a href="{% url 'music:song_detail' song.pk %}" role="button" class="outline secondary"
+       hx-get="{% url 'music:song_detail' song.pk %}" hx-target="#song-dialog">Edit</a>
+  </div>
+</div>

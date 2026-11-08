@@ -7,6 +7,7 @@ from django.tasks import task
 from yt_dlp import YoutubeDL, parse_options
 
 from .models import Author, Collection, PlaylistImport, Song
+from .thumbnails import normalize_thumbnail
 
 THUMBNAIL_EXTS = (".jpg", ".png", ".webp")
 
@@ -64,6 +65,8 @@ def _download_song(job, url):
     thumbnail_path = next(
         (p for ext in THUMBNAIL_EXTS if (p := audio_path.with_suffix(ext)).exists()), None
     )
+    if thumbnail_path:
+        thumbnail_path = normalize_thumbnail(thumbnail_path)
 
     artist_name, name = _guess_artist_and_title(info)
     author = None

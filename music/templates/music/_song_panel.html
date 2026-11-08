@@ -1,0 +1,10 @@
+<article>
+  <header>
+    {% if in_dialog %}<button aria-label="Close" rel="prev" onclick="this.closest('dialog').close()"></button>{% endif %}
+    <small>{{ song.author|default:"Unknown artist" }}</small><br>
+    <strong>{{ song.name }}</strong>
+  </header>
+  {% if song.thumbnail %}<img class="cover" src="{{ song.thumbnail.url }}" alt="">{% endif %}
+  <audio controls preload="none" src="{{ song.audio_file.url }}" style="width: 100%"></audio>
+  {% include "music/_song_collections.html" %}
+</article>

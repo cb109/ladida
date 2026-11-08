@@ -1,0 +1,25 @@
+{% extends "music/base.html" %}
+
+{% block content %}
+<hgroup>
+  <h2>Collections</h2>
+  <p><a href="{% url 'music:collection_create' %}" role="button">New collection</a></p>
+</hgroup>
+<table>
+  <thead><tr><th>Name</th><th>Songs</th><th></th></tr></thead>
+  <tbody>
+  {% for c in collections %}
+    <tr>
+      <td><a href="{% url 'music:song_list' %}?collection={{ c.pk }}">{{ c.name }}</a></td>
+      <td>{{ c.song_count }}</td>
+      <td>
+        <a href="{% url 'music:collection_edit' c.pk %}">Edit</a> &middot;
+        <a href="{% url 'music:collection_delete' c.pk %}">Delete</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="3">No collections yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "music/base.html" %}
+
+{% block content %}
+<article>
+  <h3>Delete "{{ collection.name }}"?</h3>
+  <p>The songs themselves are kept.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid">
+      <a href="{% url 'music:collection_list' %}" role="button" class="secondary outline">Cancel</a>
+      <button type="submit" class="contrast">Delete</button>
+    </div>
+  </form>
+</article>
+{% endblock %}

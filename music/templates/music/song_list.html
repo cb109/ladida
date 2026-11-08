@@ -1,0 +1,20 @@
+{% extends "music/base.html" %}
+
+{% block content %}
+<form role="search" action="{% url 'music:song_list' %}"
+      hx-get="{% url 'music:song_list' %}" hx-target="#song-rows"
+      hx-trigger="input delay:300ms, submit" hx-push-url="true">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search by song, artist or collection" aria-label="Search">
+  <select name="collection" aria-label="Collection">
+    <option value="">All collections</option>
+    {% for c in collections %}
+      <option value="{{ c.pk }}" {% if c == collection %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<section id="song-rows">
+  {% include "music/_song_rows.html" %}
+</section>
+<dialog id="song-dialog"></dialog>
+{% endblock %}

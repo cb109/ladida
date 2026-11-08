@@ -1,21 +1,39 @@
-<!doctype html>
+{% load static %}<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ladida</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="{% static 'music/app.css' %}">
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
 </head>
-<body>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <header class="container">
     <nav>
-      <ul><li><strong>ladida</strong></li></ul>
-      <ul><li><a href="{% url 'admin:index' %}">Admin</a></li></ul>
+      <ul><li><a href="{% url 'music:song_list' %}"><strong>ladida</strong></a></li></ul>
+      <ul>
+        <li><a href="{% url 'music:song_list' %}">Songs</a></li>
+        <li><a href="{% url 'music:collection_list' %}">Collections</a></li>
+        <li><a href="{% url 'music:import_page' %}">Import</a></li>
+        <li><a href="{% url 'admin:index' %}">Admin</a></li>
+      </ul>
     </nav>
   </header>
   <main class="container">
     {% block content %}{% endblock %}
   </main>
+  <script>
+    // Only one player at a time.
+    document.addEventListener("play", (e) => {
+      document.querySelectorAll("audio").forEach((a) => a !== e.target && a.pause());
+    }, true);
+    document.addEventListener("htmx:afterSwap", (e) => {
+      if (e.detail.target.tagName === "DIALOG" && !e.detail.target.open) e.detail.target.showModal();
+    });
+    document.addEventListener("close", (e) => {
+      e.target.querySelectorAll?.("audio").forEach((a) => a.pause());
+    }, true);
+  </script>
 </body>
 </html>

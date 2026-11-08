@@ -1,0 +1,30 @@
+{% extends "music/base.html" %}
+
+{% block content %}
+<h2>{% if collection %}Edit {{ collection.name }}{% else %}New collection{% endif %}</h2>
+<form method="post">
+  {% csrf_token %}
+  <label>
+    Name
+    <input type="text" name="name" required maxlength="255" value="{{ form.name.value|default:'' }}"
+           {% if form.name.errors %}aria-invalid="true"{% endif %}>
+    {% if form.name.errors %}<small>{{ form.name.errors|join:" " }}</small>{% endif %}
+  </label>
+
+  <label for="song-filter">Songs</label>
+  <input id="song-filter" type="search" placeholder="Filter songs..."
+         oninput="const q = this.value.toLowerCase(); document.querySelectorAll('.song-picker label').forEach((l) => l.hidden = !l.textContent.toLowerCase().includes(q));">
+  <fieldset class="song-picker">
+    {% for checkbox in form.songs %}
+      <label>{{ checkbox.tag }} {{ checkbox.choice_label }}</label>
+    {% empty %}
+      <small>No songs yet.</small>
+    {% endfor %}
+  </fieldset>
+
+  <div class="grid">
+    <a href="{% url 'music:collection_list' %}" role="button" class="secondary outline">Cancel</a>
+    <button type="submit">Save</button>
+  </div>
+</form>
+{% endblock %}

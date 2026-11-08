@@ -1,0 +1,23 @@
+<section id="song-collections-{{ song.pk }}">
+  <h6>Collections</h6>
+  <p>
+    {% for c in song_collections %}
+      <span class="tag">{{ c.name }}<button type="button" aria-label="Remove from {{ c.name }}"
+        hx-post="{% url 'music:song_collection_remove' song.pk c.pk %}"
+        hx-target="#song-collections-{{ song.pk }}" hx-swap="outerHTML">&times;</button></span>
+    {% empty %}
+      <small>Not in any collection.</small>
+    {% endfor %}
+  </p>
+  {% if other_collections %}
+  <form hx-post="{% url 'music:song_collection_add' song.pk %}"
+        hx-target="#song-collections-{{ song.pk }}" hx-swap="outerHTML">
+    <fieldset role="group">
+      <select name="collection" required aria-label="Collection">
+        {% for c in other_collections %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}
+      </select>
+      <button type="submit">Add</button>
+    </fieldset>
+  </form>
+  {% endif %}
+</section>

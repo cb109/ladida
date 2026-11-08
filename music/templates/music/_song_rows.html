@@ -1,0 +1,11 @@
+{% for song in page %}
+  {% include "music/_song_row.html" %}
+{% empty %}
+  <p>No songs found.</p>
+{% endfor %}
+{% if page.has_next %}
+<div id="load-more">
+  <button class="outline secondary" hx-get="{% url 'music:song_list' %}{% querystring page=page.next_page_number %}"
+          hx-target="#load-more" hx-swap="outerHTML">Load more</button>
+</div>
+{% endif %}

@@ -1,14 +1,114 @@
 from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import get_object_or_404, render
+from django.core.paginator import Paginator
+from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .forms import PlaylistImportForm
-from .models import PlaylistImport
+from .forms import AddToCollectionForm, CollectionForm, PlaylistImportForm
+from .models import Collection, PlaylistImport, Song
 from .tasks import import_playlist
+
+SONGS_PER_PAGE = 50
+
+
+def _is_htmx(request):
+    return request.headers.get("HX-Request") == "true" and not request.headers.get(
+        "HX-History-Restore-Request"
+    )
 
 
 @staff_member_required
-def index(request):
+def song_list(request):
+    songs = Song.objects.select_related("author").prefetch_related("collections").order_by("name")
+    q = request.GET.get("q", "").strip()
+    if q:
+        songs = songs.filter(
+            Q(name__icontains=q) | Q(author__name__icontains=q) | Q(collections__name__icontains=q)
+        ).distinct()
+    collection = None
+    collection_id = request.GET.get("collection", "")
+    if collection_id.isdigit():
+        collection = get_object_or_404(Collection, pk=collection_id)
+        songs = songs.filter(collections=collection)
+
+    context = {
+        "page": Paginator(songs, SONGS_PER_PAGE).get_page(request.GET.get("page")),
+        "q": q,
+        "collection": collection,
+        "collections": Collection.objects.order_by("name"),
+    }
+    template = "music/_song_rows.html" if _is_htmx(request) else "music/song_list.html"
+    return render(request, template, context)
+
+
+def _song_collections_context(song):
+    return {
+        "song": song,
+        "song_collections": song.collections.order_by("name"),
+        "other_collections": Collection.objects.exclude(songs=song).order_by("name"),
+    }
+
+
+@staff_member_required
+def song_detail(request, pk):
+    song = get_object_or_404(Song.objects.select_related("author"), pk=pk)
+    in_dialog = _is_htmx(request)
+    template = "music/_song_panel.html" if in_dialog else "music/song_detail.html"
+    return render(request, template, {**_song_collections_context(song), "in_dialog": in_dialog})
+
+
+def _render_song_collections(request, song):
+    song = Song.objects.select_related("author").prefetch_related("collections").get(pk=song.pk)
+    return render(
+        request, "music/_song_collections_response.html", _song_collections_context(song)
+    )
+
+
+@staff_member_required
+@require_POST
+def song_collection_add(request, pk):
+    song = get_object_or_404(Song, pk=pk)
+    form = AddToCollectionForm(request.POST)
+    if form.is_valid():
+        form.cleaned_data["collection"].songs.add(song)
+    return _render_song_collections(request, song)
+
+
+@staff_member_required
+@require_POST
+def song_collection_remove(request, pk, collection_pk):
+    song = get_object_or_404(Song, pk=pk)
+    get_object_or_404(Collection, pk=collection_pk).songs.remove(song)
+    return _render_song_collections(request, song)
+
+
+@staff_member_required
+def collection_list(request):
+    collections = Collection.objects.annotate(song_count=Count("songs")).order_by("name")
+    return render(request, "music/collection_list.html", {"collections": collections})
+
+
+@staff_member_required
+def collection_form(request, pk=None):
+    collection = get_object_or_404(Collection, pk=pk) if pk else None
+    form = CollectionForm(request.POST or None, instance=collection)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("music:collection_list")
+    return render(request, "music/collection_form.html", {"form": form, "collection": collection})
+
+
+@staff_member_required
+def collection_delete(request, pk):
+    collection = get_object_or_404(Collection, pk=pk)
+    if request.method == "POST":
+        collection.delete()
+        return redirect("music:collection_list")
+    return render(request, "music/collection_confirm_delete.html", {"collection": collection})
+
+
+@staff_member_required
+def import_page(request):
     return render(
         request,
         "music/index.html",
