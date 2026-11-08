@@ -10,7 +10,7 @@
 <article class="player">
   <img class="player-cover" id="player-cover" alt="">
   <div class="player-info">
-    <small class="player-artist" id="player-artist"></small>
+    <small class="player-artist"><span id="player-position"></span> <span id="player-artist"></span></small>
     <strong class="player-title" id="player-title"></strong>
     <div class="player-seek">
       <span class="time" id="player-current">0:00</span>
@@ -30,6 +30,7 @@
   {% for t in tracks %}
     <li>
       <button type="button" data-index="{{ forloop.counter0 }}">
+        <span class="track-no">{{ forloop.counter }}.</span>
         {% if t.thumbnail %}<img src="{{ t.thumbnail }}" alt="" loading="lazy">{% else %}<span class="tracklist-thumb"></span>{% endif %}
         <span><small>{{ t.artist }}</small><br>{{ t.name }}</span>
       </button>
@@ -60,6 +61,7 @@
       $("player-cover").src = t.thumbnail;
       $("player-cover").hidden = !t.thumbnail;
       $("player-artist").textContent = t.artist;
+      $("player-position").textContent = `(${index + 1}/${tracks.length})`;
       $("player-title").textContent = t.name;
       document.title = `${t.name} · ladida`;
       items.forEach((b, j) => j === index ? b.setAttribute("aria-current", "true") : b.removeAttribute("aria-current"));

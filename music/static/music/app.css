@@ -190,6 +190,14 @@
   margin-top: calc(var(--pico-spacing) * 2);
 }
 .tracklist li { list-style: none; }
+.tracklist .track-no {
+  flex: none;
+  min-width: 3ch;
+  text-align: right;
+  color: var(--pico-muted-color);
+  font-variant-numeric: tabular-nums;
+}
+#player-position { font-variant-numeric: tabular-nums; }
 .tracklist button {
   display: flex;
   align-items: center;
