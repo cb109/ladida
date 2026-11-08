@@ -6,7 +6,7 @@
   <p>The songs themselves are kept.</p>
   <form method="post">
     {% csrf_token %}
-    <div class="grid">
+    <div class="actions">
       <a href="{% url 'music:collection_list' %}" role="button" class="secondary outline">Cancel</a>
       <button type="submit" class="contrast">Delete</button>
     </div>

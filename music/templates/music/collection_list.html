@@ -1,18 +1,19 @@
 {% extends "music/base.html" %}
 
 {% block content %}
-<hgroup>
+<div class="page-header">
   <h2>Collections</h2>
-  <p><a href="{% url 'music:collection_create' %}" role="button">New collection</a></p>
-</hgroup>
+  <a href="{% url 'music:collection_create' %}" role="button">New collection</a>
+</div>
 <table>
   <thead><tr><th>Name</th><th></th></tr></thead>
   <tbody>
   {% for c in collections %}
     <tr>
       <td><a href="{% url 'music:song_list' %}?collection={{ c.pk }}">{{ c.name }} ({{ c.song_count }})</a></td>
-      <td>
-        <a href="{% url 'music:collection_edit' c.pk %}">Edit</a> &middot;
+      <td class="row-actions">
+        <a href="{% url 'music:collection_edit' c.pk %}">Edit</a>
+        &middot;
         <a href="{% url 'music:collection_delete' c.pk %}">Delete</a>
       </td>
     </tr>

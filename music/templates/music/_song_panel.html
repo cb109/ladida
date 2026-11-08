@@ -5,6 +5,6 @@
     <strong>{{ song.name }}</strong>
   </header>
   {% if song.thumbnail %}<img class="cover" src="{{ song.thumbnail.url }}" alt="">{% endif %}
-  <audio controls preload="none" src="{{ song.audio_file.url }}" style="width: 100%"></audio>
+  <audio class="panel-audio" controls preload="none" src="{{ song.audio_file.url }}"></audio>
   {% include "music/_song_collections.html" %}
 </article>
