@@ -11,7 +11,7 @@
   </div>
   <div class="song-collections">
     {% for c in song.collections.all %}
-      <a class="tag" href="{% url 'music:song_list' %}?collection={{ c.pk }}">{{ c.name }}</a>
+      <a class="tag" href="{% url 'music:song_list' %}?collection={{ c.pk }}">{{ c.name }} ({{ c.song_count }})</a>
     {% endfor %}
   </div>
   <div class="song-actions">

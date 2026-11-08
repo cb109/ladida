@@ -8,7 +8,7 @@
   <select name="collection" aria-label="Collection">
     <option value="">All collections</option>
     {% for c in collections %}
-      <option value="{{ c.pk }}" {% if c == collection %}selected{% endif %}>{{ c.name }}</option>
+      <option value="{{ c.pk }}" {% if c == collection %}selected{% endif %}>{{ c.name }} ({{ c.song_count }})</option>
     {% endfor %}
   </select>
 </form>

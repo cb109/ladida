@@ -1,6 +1,6 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -19,7 +19,7 @@ def _is_htmx(request):
 
 @staff_member_required
 def song_list(request):
-    songs = Song.objects.select_related("author").prefetch_related("collections").order_by("name")
+    songs = Song.objects.select_related("author").prefetch_related(_collections_prefetch()).order_by("name")
     q = request.GET.get("q", "").strip()
     if q:
         songs = songs.filter(
@@ -35,17 +35,21 @@ def song_list(request):
         "page": Paginator(songs, SONGS_PER_PAGE).get_page(request.GET.get("page")),
         "q": q,
         "collection": collection,
-        "collections": Collection.objects.order_by("name"),
+        "collections": Collection.objects.with_song_count().order_by("name"),
     }
     template = "music/_song_rows.html" if _is_htmx(request) else "music/song_list.html"
     return render(request, template, context)
 
 
+def _collections_prefetch():
+    return Prefetch("collections", queryset=Collection.objects.with_song_count())
+
+
 def _song_collections_context(song):
     return {
         "song": song,
-        "song_collections": song.collections.order_by("name"),
-        "other_collections": Collection.objects.exclude(songs=song).order_by("name"),
+        "song_collections": song.collections.with_song_count().order_by("name"),
+        "other_collections": Collection.objects.with_song_count().exclude(songs=song).order_by("name"),
     }
 
 
@@ -58,7 +62,7 @@ def song_detail(request, pk):
 
 
 def _render_song_collections(request, song):
-    song = Song.objects.select_related("author").prefetch_related("collections").get(pk=song.pk)
+    song = Song.objects.select_related("author").prefetch_related(_collections_prefetch()).get(pk=song.pk)
     return render(
         request, "music/_song_collections_response.html", _song_collections_context(song)
     )
@@ -84,13 +88,13 @@ def song_collection_remove(request, pk, collection_pk):
 
 @staff_member_required
 def collection_list(request):
-    collections = Collection.objects.annotate(song_count=Count("songs")).order_by("name")
+    collections = Collection.objects.with_song_count().order_by("name")
     return render(request, "music/collection_list.html", {"collections": collections})
 
 
 @staff_member_required
 def collection_form(request, pk=None):
-    collection = get_object_or_404(Collection, pk=pk) if pk else None
+    collection = get_object_or_404(Collection.objects.with_song_count(), pk=pk) if pk else None
     form = CollectionForm(request.POST or None, instance=collection)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -100,7 +104,7 @@ def collection_form(request, pk=None):
 
 @staff_member_required
 def collection_delete(request, pk):
-    collection = get_object_or_404(Collection, pk=pk)
+    collection = get_object_or_404(Collection.objects.with_song_count(), pk=pk)
     if request.method == "POST":
         collection.delete()
         return redirect("music:collection_list")

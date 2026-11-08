@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import Count, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 
 
 class TimestampedModel(models.Model):
@@ -34,10 +36,25 @@ class Song(TimestampedModel):
         return self.name
 
 
+class CollectionQuerySet(models.QuerySet):
+    def with_song_count(self):
+        # Subquery rather than Count("songs") so it stays correct when used in an m2m Prefetch.
+        counts = (
+            self.model.songs.through.objects.filter(collection=OuterRef("pk"))
+            .order_by()
+            .values("collection")
+            .annotate(n=Count("pk"))
+            .values("n")
+        )
+        return self.annotate(song_count=Coalesce(Subquery(counts), 0))
+
+
 class Collection(TimestampedModel):
     name = models.CharField(max_length=255)
 
     songs = models.ManyToManyField(Song, related_name="collections", blank=True)
+
+    objects = CollectionQuerySet.as_manager()
 
     def __str__(self):
         return self.name

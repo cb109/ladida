@@ -1,7 +1,7 @@
 {% extends "music/base.html" %}
 
 {% block content %}
-<h2>{% if collection %}Edit {{ collection.name }}{% else %}New collection{% endif %}</h2>
+<h2>{% if collection %}Edit {{ collection.name }} ({{ collection.song_count }}){% else %}New collection{% endif %}</h2>
 <form method="post">
   {% csrf_token %}
   <label>
