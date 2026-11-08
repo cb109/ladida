@@ -1,0 +1,13 @@
+{% extends "music/base.html" %}
+
+{% block content %}
+<h2>Import a YouTube playlist</h2>
+{% include "music/_import_form.html" %}
+
+<h3>Imports</h3>
+<div id="imports">
+  {% for job in imports %}
+    {% include "music/_import.html" %}
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+<article id="import-{{ job.pk }}"
+  {% if job.is_active %}hx-get="{% url 'music:import_progress' job.pk %}" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %}>
+  <header>
+    <strong>{{ job.title|default:job.url }}</strong>
+    <small> &middot; {{ job.get_status_display }}</small>
+  </header>
+
+  {% if job.total %}
+    <progress value="{{ job.processed }}" max="{{ job.total }}"></progress>
+    <p>{{ job.processed }} / {{ job.total }} songs{% if job.failed %} ({{ job.failed }} failed){% endif %}</p>
+  {% elif job.is_active %}
+    <progress></progress>
+    <p><small>{% if job.status == "pending" %}Waiting for the worker&hellip;{% else %}Reading playlist&hellip;{% endif %}</small></p>
+  {% endif %}
+
+  {% if job.status == "running" and job.current_title %}
+    <p><small>Downloading: {{ job.current_title }}</small></p>
+    <progress value="{{ job.current_percent }}" max="100"></progress>
+  {% endif %}
+
+  {% if job.log %}
+    <details><summary>Log</summary><pre>{{ job.log }}</pre></details>
+  {% endif %}
+
+  {% if job.collection and not job.is_active %}
+    <footer><a href="{% url 'admin:music_collection_change' job.collection.pk %}">Open collection</a></footer>
+  {% endif %}
+</article>

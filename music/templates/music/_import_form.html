@@ -1,0 +1,16 @@
+<form id="import-form" hx-post="{% url 'music:import_create' %}" hx-swap="outerHTML" hx-disabled-elt="find button">
+  {% csrf_token %}
+  <fieldset role="group">
+    <input type="url" name="url" required
+           placeholder="https://www.youtube.com/playlist?list=..."
+           value="{{ form.url.value|default:'' }}"
+           {% if form.url.errors %}aria-invalid="true"{% endif %}>
+    <button type="submit">Download</button>
+  </fieldset>
+  {% if form.url.errors %}<small>{{ form.url.errors|join:" " }}</small>{% endif %}
+</form>
+{% if new_import %}
+<div hx-swap-oob="afterbegin:#imports">
+  {% with job=new_import %}{% include "music/_import.html" %}{% endwith %}
+</div>
+{% endif %}

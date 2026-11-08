@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_tasks_db",
     "music",
 ]
 
@@ -50,8 +51,23 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        # The task worker writes progress while the web process reads it.
+        "OPTIONS": {
+            "init_command": "PRAGMA journal_mode=WAL;",
+            "transaction_mode": "IMMEDIATE",
+            "timeout": 20,
+        },
     }
 }
+
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_db.DatabaseBackend",
+        "QUEUES": ["default"],
+    }
+}
+
+LOGIN_URL = "admin:login"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
