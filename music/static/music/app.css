@@ -1,3 +1,24 @@
+header nav,
+header nav ul {
+  flex-wrap: wrap;
+}
+header nav { column-gap: 1rem; }
+@media (max-width: 576px) {
+  header nav li { padding: 0.25rem 0.5rem; }
+  header nav ul:last-child { margin-inline: 0; column-gap: 0.25rem; }
+}
+
+.nav-icon { display: inline-flex; }
+.nav-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .song-row {
   display: grid;
   grid-template-columns: 160px minmax(0, 2fr) minmax(0, 1fr) auto;
@@ -127,13 +148,21 @@
 }
 .player {
   position: sticky;
-  top: 0.5rem;
+  top: 0.75rem;
   z-index: 10;
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1rem;
   box-shadow: var(--pico-card-box-shadow), 0 6px 12px -6px rgba(0, 0, 0, 0.35);
+}
+/* Masks the gap above the stuck player so scrolled content doesn't peek through. */
+.player::before {
+  content: "";
+  position: absolute;
+  inset: auto -1rem 100% -1rem;
+  height: 0.75rem;
+  background: var(--pico-background-color);
 }
 .player-cover {
   flex: none;
