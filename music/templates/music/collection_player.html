@@ -22,17 +22,22 @@
     <button type="button" class="secondary" id="player-prev" aria-label="Previous">&#x23EE;&#xFE0E;</button>
     <button type="button" id="player-play" aria-label="Play">&#x25B6;&#xFE0E;</button>
     <button type="button" class="secondary" id="player-next" aria-label="Next">&#x23ED;&#xFE0E;</button>
+    <button type="button" class="secondary" id="player-order" data-mode="added">
+      <svg data-icon="added" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10M4 6h1M4 12h1M4 18h1"/></svg>
+      <svg data-icon="artist" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      <svg data-icon="shuffle" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+    </button>
   </div>
   <audio id="player-audio" preload="metadata"></audio>
 </article>
 
-<ul class="tracklist">
+<ul class="tracklist" id="tracklist">
   {% for t in tracks %}
     <li>
       <button type="button" data-index="{{ forloop.counter0 }}">
         <span class="track-no">{{ forloop.counter }}.</span>
         {% if t.thumbnail %}<img src="{{ t.thumbnail }}" alt="" loading="lazy">{% else %}<span class="tracklist-thumb"></span>{% endif %}
-        <span><small>{{ t.artist }}</small><br>{{ t.name }}</span>
+        <span><small>{{ t.artist|default:"Unknown artist" }}</small><br>{{ t.name }}</span>
       </button>
     </li>
   {% endfor %}
@@ -49,41 +54,89 @@
   (() => {
     const tracks = JSON.parse(document.getElementById("tracks").textContent);
     const $ = (id) => document.getElementById(id);
-    const audio = $("player-audio"), seek = $("player-seek"), playBtn = $("player-play");
+    const audio = $("player-audio"), seek = $("player-seek"), playBtn = $("player-play"), orderBtn = $("player-order");
     const items = [...document.querySelectorAll(".tracklist button")];
     const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-    let index = 0;
+    const artistOf = (t) => t.artist || "Unknown artist";
+    const n = tracks.length;
+    const modes = ["added", "artist", "shuffle"];
+    const modeLabels = { added: "order added", artist: "artist, then title", shuffle: "shuffle" };
+    const cmp = (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" });
+    const byArtist = tracks.map((_, i) => i).sort((a, b) => {
+      const ta = tracks[a], tb = tracks[b];
+      if (!ta.artist !== !tb.artist) return ta.artist ? -1 : 1;
+      return cmp(ta.artist, tb.artist) || cmp(ta.name, tb.name);
+    });
+    // order maps play position -> track index; pos is the position within it.
+    let order = tracks.map((_, i) => i), pos = 0;
 
-    function load(i, autoplay) {
-      index = (i + tracks.length) % tracks.length;
-      const t = tracks[index];
-      audio.src = t.audio;
+    function render() {
+      const index = order[pos], t = tracks[index];
       $("player-cover").src = t.thumbnail;
       $("player-cover").hidden = !t.thumbnail;
-      $("player-artist").textContent = t.artist;
-      $("player-position").textContent = `(${index + 1}/${tracks.length})`;
+      $("player-artist").textContent = artistOf(t);
+      $("player-position").textContent = `(${pos + 1}/${n})`;
       $("player-title").textContent = t.name;
       document.title = `${t.name} · ladida`;
       items.forEach((b, j) => j === index ? b.setAttribute("aria-current", "true") : b.removeAttribute("aria-current"));
       if ("mediaSession" in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
-          title: t.name, artist: t.artist, artwork: t.thumbnail ? [{ src: t.thumbnail }] : [],
+          title: t.name, artist: artistOf(t), artwork: t.thumbnail ? [{ src: t.thumbnail }] : [],
         });
       }
+    }
+
+    function load(p, autoplay) {
+      pos = (p + n) % n;
+      audio.src = tracks[order[pos]].audio;
+      render();
       if (autoplay) audio.play();
     }
 
-    const prev = () => (audio.currentTime > 3 ? (audio.currentTime = 0) : load(index - 1, true));
-    const next = () => load(index + 1, true);
+    function setMode(mode, keepCurrent = true) {
+      const current = order[pos];
+      if (mode === "artist") {
+        order = [...byArtist];
+      } else {
+        order = tracks.map((_, i) => i);
+        if (mode === "shuffle") {
+          for (let i = n - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [order[i], order[j]] = [order[j], order[i]];
+          }
+          // Keep the playing song as the first of the shuffled order.
+          if (keepCurrent) order = [current, ...order.filter((i) => i !== current)];
+        }
+      }
+      pos = keepCurrent ? order.indexOf(current) : 0;
+      // The song list mirrors the play order, numbered by play position.
+      order.forEach((i, p) => {
+        const li = items[i].parentElement;
+        li.querySelector(".track-no").textContent = `${p + 1}.`;
+        $("tracklist").appendChild(li);
+      });
+      orderBtn.dataset.mode = mode;
+      orderBtn.classList.toggle("secondary", mode !== "shuffle");
+      orderBtn.title = `Play order: ${modeLabels[mode]}`;
+      orderBtn.setAttribute("aria-label", `Play order: ${modeLabels[mode]} (click to change)`);
+      localStorage.setItem("playOrder", mode);
+    }
+
+    const prev = () => (audio.currentTime > 3 ? (audio.currentTime = 0) : load(pos - 1, true));
+    const next = () => load(pos + 1, true);
 
     playBtn.addEventListener("click", () => (audio.paused ? audio.play() : audio.pause()));
     $("player-prev").addEventListener("click", prev);
     $("player-next").addEventListener("click", next);
-    items.forEach((b) => b.addEventListener("click", () => load(Number(b.dataset.index), true)));
+    orderBtn.addEventListener("click", () => {
+      setMode(modes[(modes.indexOf(orderBtn.dataset.mode) + 1) % modes.length]);
+      render();
+    });
+    items.forEach((b) => b.addEventListener("click", () => load(order.indexOf(Number(b.dataset.index)), true)));
 
     audio.addEventListener("play", () => { playBtn.innerHTML = "&#x23F8;&#xFE0E;"; playBtn.setAttribute("aria-label", "Pause"); });
     audio.addEventListener("pause", () => { playBtn.innerHTML = "&#x25B6;&#xFE0E;"; playBtn.setAttribute("aria-label", "Play"); });
-    audio.addEventListener("ended", () => index < tracks.length - 1 && next());
+    audio.addEventListener("ended", () => pos < n - 1 && next());
     audio.addEventListener("loadedmetadata", () => {
       seek.max = Math.floor(audio.duration);
       $("player-duration").textContent = fmt(audio.duration);
@@ -101,6 +154,8 @@
       navigator.mediaSession.setActionHandler("nexttrack", next);
     }
 
+    const savedMode = localStorage.getItem("playOrder");
+    setMode(modes.includes(savedMode) ? savedMode : "added", false);
     load(0, false);
   })();
 </script>

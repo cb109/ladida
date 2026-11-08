@@ -105,14 +105,20 @@ def collection_form(request, pk=None):
 @staff_member_required
 def collection_player(request, pk):
     collection = get_object_or_404(Collection.objects.with_song_count(), pk=pk)
+    # Through-table pk order == order the songs were added (playlist order for imports).
+    entries = (
+        Collection.songs.through.objects.filter(collection=collection)
+        .select_related("song__author")
+        .order_by("pk")
+    )
     tracks = [
         {
-            "name": song.name,
-            "artist": str(song.author or "Unknown artist"),
-            "audio": song.audio_file.url,
-            "thumbnail": song.thumbnail.url if song.thumbnail else "",
+            "name": e.song.name,
+            "artist": e.song.author.name if e.song.author else "",
+            "audio": e.song.audio_file.url,
+            "thumbnail": e.song.thumbnail.url if e.song.thumbnail else "",
         }
-        for song in collection.songs.select_related("author").order_by("name")
+        for e in entries
     ]
     return render(request, "music/collection_player.html", {"collection": collection, "tracks": tracks})
 
