@@ -34,7 +34,7 @@ async function networkFirst(request) {
     if (cacheable(res)) await cache.put(request, res.clone());
     return res;
   } catch (err) {
-    const hit = await cache.match(request);
+    const hit = await cache.match(request, { ignoreVary: true });
     if (hit) return hit;
     throw err;
   }
@@ -81,6 +81,20 @@ async function handleMedia(request) {
 
 const pending = new Map();
 
+// Pages loaded before the worker took control (or before a UI update) missed the fetch handler.
+async function precache(urls) {
+  const ui = await caches.open(UI_CACHE);
+  await Promise.allSettled(urls.map(async (href) => {
+    const url = new URL(href, self.location.origin);
+    const sameOrigin = url.origin === self.location.origin;
+    if (sameOrigin && url.pathname.startsWith(MEDIA_PREFIX)) return cacheMedia(url.href);
+    if (sameOrigin ? url.pathname.startsWith(ADMIN_PREFIX) : !CDN_ORIGINS.includes(url.origin)) return;
+    if (await ui.match(url.href, { ignoreVary: true })) return;
+    const res = await fetch(url.href, sameOrigin ? {} : { mode: "no-cors" });
+    if (cacheable(res)) await ui.put(url.href, res);
+  }));
+}
+
 function cacheMedia(url) {
   if (!pending.has(url)) {
     pending.set(url, (async () => {
@@ -94,6 +108,10 @@ function cacheMedia(url) {
 }
 
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "precache") {
+    event.waitUntil(precache(event.data.urls));
+    return;
+  }
   if (event.data?.type !== "cache-media") return;
   const url = new URL(event.data.url, self.location.origin);
   if (url.origin === self.location.origin && url.pathname.startsWith(MEDIA_PREFIX)) {

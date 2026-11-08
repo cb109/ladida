@@ -35,7 +35,18 @@
     {% block content %}{% endblock %}
   </main>
   <script>
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("{% url 'music:service_worker' %}");
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("{% url 'music:service_worker' %}");
+      addEventListener("load", () => {
+        const urls = [
+          location.href,
+          ...[...document.querySelectorAll("link[rel=stylesheet][href]")].map((l) => l.href),
+          ...[...document.querySelectorAll("script[src]")].map((s) => s.src),
+          ...[...document.images].filter((i) => i.complete && i.currentSrc).map((i) => i.currentSrc),
+        ];
+        navigator.serviceWorker.ready.then((r) => r.active?.postMessage({ type: "precache", urls }));
+      });
+    }
     // Only one player at a time.
     document.addEventListener("play", (e) => {
       document.querySelectorAll("audio").forEach((a) => a !== e.target && a.pause());
